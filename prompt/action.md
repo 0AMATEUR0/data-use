@@ -1,0 +1,7 @@
+<output>
+    <evaluate>{evaluate}</evaluate>
+    <memory>{memory}</memory>
+    <thought>{thought}</thought>
+    <action_name>{action_name}</action_name>
+    <action_input>{action_input}</action_input>
+</output>
