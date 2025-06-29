@@ -32,6 +32,7 @@ class LoadDataFrame(SharedBaseModel):
     sheet_name: Optional[Union[str, int]] = Field(0, description="Sheet name or index (0 means the first sheet)", examples=["Sheet1", 0])
     origin_header_row: int = Field(0, description="The row numbers used as headers in the original table, 0 means the first row", examples=[10])
 
+
 class ExcelHead(SharedBaseModel):
     """
     ExcelHead is a model for getting the first few rows of an Excel file.

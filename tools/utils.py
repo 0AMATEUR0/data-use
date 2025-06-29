@@ -9,6 +9,7 @@ def col_to_colidx(df: pd.DataFrame, col_param: Union[int, str]) -> int:
             return col_param
         else:
             raise ValueError(f"column index {col_param} out of range, should be between 0 and {len(df.columns) - 1}")
+     
         
     elif isinstance(col_param, str):
         if col_param in df.columns:

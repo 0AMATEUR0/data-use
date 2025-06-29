@@ -146,3 +146,6 @@ class Agent:
         console=Console()
         response=self.invoke(query)
         console.print(Markdown(response.content or response.error))
+
+
+        

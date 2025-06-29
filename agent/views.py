@@ -67,3 +67,6 @@ class AgentData(BaseModel):
     memory: Optional[str]=None
     thought: Optional[str]=None
     action: Optional[Action]=None
+
+
+    

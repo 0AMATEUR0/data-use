@@ -99,3 +99,4 @@ class Prompt:
             'thought': agent_data.thought,
             'final_answer': tool_result.content
         })
+    
