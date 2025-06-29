@@ -95,7 +95,6 @@ def read_dataframe_tool(df_name: str, row: Optional[Union[int, List[int]]] = Non
         return f"DataFrame Object '{df_name}' not found."
     df = DATAFRAME_REGISTRY[df_name]['dataframe']
     
-    
     # 处理行参数
     rows = None
     if row is not None:
