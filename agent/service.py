@@ -1,9 +1,4 @@
-from tools.service import(
-    done_tool,
-    excel2json_tool,
-    json2excel_tool,
-    get_json_data_tool
-)
+from tools.service import *
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from agent.views import AgentResult, AgentStep, AgentState
 from agent.utils import extract_agent_data
@@ -27,37 +22,44 @@ logger.addHandler(handler)
 
 default_tools = [
     done_tool,
-    excel2json_tool,
-    json2excel_tool,
-    get_json_data_tool
+    human_tool,
+    load_dataframe_tool,
+    excel_head_tool,
+    excel_info_tool,
+    dataframe2excel_tool,
+    read_dataframe_tool,
+    write_dataframe_tool,
+    # Add any other default tools here, e.g.:
+    # get_json_data_tool
 ]
 
 
 class Agent:
     """
     Data Use Agent
-
-    An agent that can interact with data, including reading and writing files, converting formats, and more.
+    一个可以与数据交互的代理
 
     Args:
-        instructions (list[str], optional): Instructions for the agent. Defaults to [].
-        additional_tools (list[BaseTool], optional): Additional tools for the agent. Defaults to [].
-        llm (BaseChatModel, optional): Language model for the agent. Defaults to None.
-        max_steps (int, optional): Maximum number of steps for the agent. Defaults to 100.
-        file_path (str, optional): Path to store files. Defaults to None.
+        instructions (list[str], optional): 代理的指令列表。默认为空列表
+        additional_tools (list[BaseTool], optional): 额外的工具列表。默认为空列表
+        llm (BaseChatModel, optional): 用于代理的语言模型。默认为 None
+        max_steps (int, optional): 代理的最大步骤数。默认为 100
+        max_memory (int, optional): 代理的最大额外记忆大小。默认为 10(不包括最开始的system_message和user_query,也就是实际最大12条消息)
+        file_path (str, optional): 文件路径。默认为 None
     """
     def __init__(self,
                  instructions: list[str] = [],
                  additional_tools: list[BaseTool] = [],
                  llm: BaseChatModel = None,
                  max_steps:int=100,
+                 max_memory:int=10,
                  file_path: str = None):
         self.name = 'Data Use Agent'
         self.description = 'An agent that can interact with data'
         self.registry = Registry(tools=default_tools + additional_tools)
         self.instructions = instructions
         self.llm = llm
-        self.agent_state = AgentState()
+        self.agent_state = AgentState(max_memory=max_memory)
         self.agent_step = AgentStep(max_steps=max_steps)
         self.file_path = file_path
 
@@ -82,7 +84,7 @@ class Agent:
         tool_result = self.registry.execute(tool_name=name, **params)
         observation=tool_result.content if tool_result.is_success else tool_result.error
         logger.info(colored(f"🔭: Observation: {shorten(observation,500,placeholder='...')}",color='green',attrs=['bold']))
-        prompt=Prompt.observation_prompt(agent_step=self.agent_step, tool_result=tool_result)
+        prompt=Prompt.observation_prompt(agent_step=self.agent_step, agent_state=self.agent_state, tool_result=tool_result)
         human_message = HumanMessage(content=prompt)
         self.agent_state.update_state(agent_data=None,observation=observation,messages=[ai_message, human_message])
 
@@ -103,6 +105,7 @@ class Agent:
         tools_prompt = self.registry.get_tools_prompt()
         prompt = Prompt.observation_prompt(
             agent_step= self.agent_step,
+            agent_state=self.agent_state,
             tool_result=ToolResult(is_success=True, content="No Action"),
         )
         system_message = SystemMessage(

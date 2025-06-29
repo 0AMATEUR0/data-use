@@ -2,6 +2,7 @@ from langchain_core.messages import BaseMessage, HumanMessage
 from agent.views import AgentData
 import ast
 import re
+import json
 
 def read_file(file_path: str) -> str:
     with open(file_path, 'r') as file:

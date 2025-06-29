@@ -1,5 +1,5 @@
 from registry.views import ToolResult
-from agent.views import AgentStep, AgentData
+from agent.views import AgentStep, AgentData, AgentState
 from langchain.prompts import PromptTemplate
 from importlib.resources import files
 from textwrap import dedent
@@ -61,7 +61,7 @@ class Prompt:
         return template.format(**{'observation': observation})
     
     @staticmethod
-    def observation_prompt(agent_step: AgentStep, tool_result:ToolResult) -> str:
+    def observation_prompt(agent_step: AgentStep, agent_state: AgentState, tool_result:ToolResult) -> str:
         """
         生成观察提示信息。
         
@@ -77,6 +77,7 @@ class Prompt:
             'steps': agent_step.step_number,
             'max_steps': agent_step.max_steps,
             'observation': tool_result.content if tool_result.is_success else tool_result.error,
+            'forgotten_memories': agent_state.forgotten_memories,
         })
     
     @staticmethod
