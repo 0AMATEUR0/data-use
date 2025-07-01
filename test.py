@@ -13,17 +13,15 @@ from openpyxl import load_workbook
 
 DATAFRAME_REGISTRY = {}
 
-def load_dataframe_tool(df_name: str, file_path: str, sheet_name: Optional[Union[str, int]] = 0, header_row: int = 0):
-    df = pd.read_excel(file_path, sheet_name=sheet_name, header=header_row)
+def load_dataframe_tool(df_name: str, file_path: str, sheet_name: Optional[Union[str, int]] = 0, origin_header_row: int = 0):
+    df = pd.read_excel(file_path, sheet_name=sheet_name, header=origin_header_row)
     DATAFRAME_REGISTRY[df_name] = {
         'dataframe': df, # DataFrame object
         'file_path': file_path, 
         'sheet_name': sheet_name,
-        'header_row': header_row
+        'origin_header_row': origin_header_row
     }
-    return f"DataFrame Object '{df_name}' Registered from file '{file_path}' with sheet '{sheet_name}', file path '{file_path}' and header row {header_row}."
-
-
+    return f"DataFrame Object '{df_name}' Registered from file '{file_path}' with sheet '{sheet_name}', file path '{file_path}' and header row {origin_header_row}."
 
 def excel_head_tool(file_path: str, head: int):
     """
@@ -60,6 +58,59 @@ def excel_info_tool(df_name: str):
     info_str += f"Info of DataFrame:\n{info_output}\n"
     return info_str
 
+
+
+def read_dataframe_tool(df_name: str, row: Optional[Union[int, List[int]]] = None, col: Optional[Union[int, str, List[Union[int, str]]]] = None):
+    if df_name not in DATAFRAME_REGISTRY:
+        return f"DataFrame Object '{df_name}' not found."
+    df = DATAFRAME_REGISTRY[df_name]['dataframe']
+    
+    # 处理行参数
+    rows = None
+    if row is not None:
+        if isinstance(row, int):
+            if row < 0 or row >= len(df):
+                return f"Row index {row} out of range for DataFrame '{df_name}'."
+            rows = [row]
+        elif isinstance(row, list):
+            if any(r < 0 or r >= len(df) for r in row):
+                return f"Row indices {row} out of range for DataFrame '{df_name}'."
+            rows = row
+        else:
+            return "Invalid 'row' parameter type; must be int or list of ints."
+        
+    # 处理列参数
+    cols = None
+    if col is not None:
+        if isinstance(col, (int, str)):
+            idx = col_to_colidx(df, col)
+            if idx == -1:
+                return f"Column '{col}' not found in DataFrame '{df_name}'."
+            cols = [idx]
+        elif isinstance(col, list):
+            cols = []
+            for c in col:
+                idx = col_to_colidx(df, c)
+                if idx == -1:
+                    return f"Column '{c}' not found in DataFrame '{df_name}'."
+                cols.append(idx)
+        else:
+            return "Invalid 'col' parameter type; must be int, str or list of these."
+
+    try:
+        df_selected = df
+
+        if cols is not None:
+            df_selected = df_selected.iloc[:, cols]
+        
+        if rows is not None:
+            df_selected = df_selected.iloc[rows, :]
+
+        matrix = df_selected.fillna("").values.tolist() # 将DataFrame转换为二维列表
+
+        return f"Reading DataFrame '{df_name}':\n{matrix}"
+    except Exception as e:
+        return f"Error reading DataFrame '{df_name}': {str(e)}"
 
 
 def write_dataframe_tool(df_name: str,
@@ -174,15 +225,46 @@ def dataframe2excel_tool(df_name: str):
 
 
 file_path = "D:/Project/SAPagent/SAP-data/ACC_Short_barge"
-load_dataframe_tool(df_name="Accrual_Short_barge", file_path=f"{file_path}/4.Accrual Short barge fee-Template.xlsx", sheet_name=0, header_row=10)
-
-write_dataframe_tool(df_name="Accrual_Short_barge",
-                     start_row=0,
-                     start_col=0,
-                     step=1,
-                     values=[[5531, 'DR', 60900000, None, 808.0, '08', None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'CR', 38610000, None, 808.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'DR', 60900000, None, 404.0, '08', None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'CR', 38610000, None, 404.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'DR', 60900000, None, 2000.0, '08', None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'CR', 38610000, None, 2000.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'DR', 60900000, None, 2891.0, '08', None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'CR', 38610000, None, 2891.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'DR', 60900000, None, 808.0, '08', None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'CR', 38610000, None, 808.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'DR', 60900000, None, 808.0, '08', None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'CR', 38610000, None, 808.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'DR', 60900000, None, 1076.0, '08', None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'CR', 38610000, None, 1076.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'DR', 60900000, None, 3782.0, '08', None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'CR', 38610000, None, 3782.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'DR', 60900000, None, 1212.0, '08', None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'CR', 38610000, None, 1212.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'DR', 60900000, None, 1212.0, '08', None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'CR', 38610000, None, 1212.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'DR', 60900000, None, 891.0, '08', None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'CR', 38610000, None, 891.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'DR', 60900000, None, 808.0, '08', None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'CR', 38610000, None, 808.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'DR', 60900000, None, 1212.0, '08', None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'CR', 38610000, None, 1212.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'DR', 60900000, None, 404.0, '08', None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'CR', 38610000, None, 404.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'DR', 60900000, None, 1076.0, '08', None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'CR', 38610000, None, 1076.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'DR', 60900000, None, 87000.0, '08', None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'], [5531, 'CR', 38610000, None, 87000.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406']],
-                     axis='matrix')
-dataframe2excel_tool(df_name="Accrual_Short_barge")
+load_dataframe_tool(df_name="Accrual_Short_barge", file_path=f"{file_path}/2024年6月DLD-drayage transport.xlsx", sheet_name=0, origin_header_row=0)
+print(read_dataframe_tool(df_name="Accrual_Short_barge", col=28, row=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]))
+# write_dataframe_tool(df_name="Accrual_Short_barge",
+#                      start_row=0,
+#                      start_col=0,
+#                      step=1,
+#                      values=[[5531, 'DR', 60900000, None, 808.0, None, None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'CR', 38610000, None, 808.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'DR', 60900000, None, 404.0, None, None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'CR', 38610000, None, 404.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'DR', 60900000, None, 2000.0, None, None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'CR', 38610000, None, 2000.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'DR', 60900000, None, 2891.0, None, None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'CR', 38610000, None, 2891.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'DR', 60900000, None, 808.0, None, None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'CR', 38610000, None, 808.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'DR', 60900000, None, 808.0, None, None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'CR', 38610000, None, 808.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'DR', 60900000, None, 1076.0, None, None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'CR', 38610000, None, 1076.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'DR', 60900000, None, 3782.0, None, None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'CR', 38610000, None, 3782.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'DR', 60900000, None, 1212.0, None, None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'CR', 38610000, None, 1212.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'DR', 60900000, None, 1212.0, None, None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'CR', 38610000, None, 1212.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'DR', 60900000, None, 891.0, None, None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'CR', 38610000, None, 891.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'DR', 60900000, None, 808.0, None, None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'CR', 38610000, None, 808.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'DR', 60900000, None, 1212.0, None, None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'CR', 38610000, None, 1212.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'DR', 60900000, None, 404.0, None, None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'CR', 38610000, None, 404.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'DR', 60900000, None, 1076.0, None, None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'CR', 38610000, None, 1076.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'DR', 60900000, None, 87000.0, None, None, 'Cost Center', '72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406'],
+#                              [5531, 'CR', 38610000, None, 87000.0, '09', None, 'Profit Center', 'P72MSCO', None, None, None, None, 'Acc short barge 202406', 'Acc short barge 202406']],
+#                      axis='matrix')
+# dataframe2excel_tool(df_name="Accrual_Short_barge")
 
 # head_data = excel_head_tool(file_path=f"{file_path}/4.Accrual Short barge fee-Template.xls", head=20)
 # print(f"Head Data:\n{head_data}")

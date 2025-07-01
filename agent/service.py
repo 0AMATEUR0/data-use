@@ -1,7 +1,7 @@
 from tools.service import *
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from agent.views import AgentResult, AgentStep, AgentState
-from agent.utils import extract_agent_data
+from agent.utils import extract_agent_data, AgentContext
 from langchain_core.language_models.chat_models import BaseChatModel
 from registry.service import Registry
 from registry.views import ToolResult
@@ -33,6 +33,9 @@ default_tools = [
     # get_json_data_tool
 ]
 
+skip_keys={"file_path","df_name", "sheet_name", "start_row", "start_col", "axis", "answer", "question"} # 不需要进行动态表达式解析的键
+
+ctx = AgentContext() # 全局上下文，用于注册和解析工具输出
 
 class Agent:
     """
@@ -66,6 +69,16 @@ class Agent:
     def reason(self):
         message = self.llm.invoke(self.agent_state.messages)
         agent_data = extract_agent_data(message=message)
+
+        # 解析动态表达式
+        if DATAFRAME_REGISTRY is not None:
+            for df_name, df_info in DATAFRAME_REGISTRY.items():
+                df_obj = df_info.get('dataframe')
+                if df_obj is not None and not ctx.has(df_name):
+                    ctx.register_tool_output(df_name, df_obj)
+        agent_data.action.params = ctx.resolve_dict(agent_data.action.params,
+                                                    skip_keys=skip_keys)
+        
         self.agent_state.update_state(
             agent_data=agent_data,
             messages=[message]

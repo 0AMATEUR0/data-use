@@ -87,5 +87,10 @@ You MUST always output the explicit, complete value or list.
 <action_input>{{'row': 17}}</action_input>  
 <action_input>{{'col': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}}</action_input>  
 
+**IMPORTANT:**
+The params `start_row` in `write_dataframe_tool` is the start row of the DataFrame Object, not the head row of origin excel. The start_row of the DataFrame object is the **start_row+head_row** of the original excel file. +headrow will be automatically processed when using `dataframe2excel_tool`. 
+The table header will not be read into the DF object by `load_dataframe_tool`, so the 0th row of the DataFrame Object is the real data not head.
+Remember use `dataframe2excel_tool` to write your registered DataFrame back to Excel file.
+
 
 Begin!!!

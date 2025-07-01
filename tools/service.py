@@ -165,7 +165,10 @@ def write_dataframe_tool(df_name: str,
     df = DATAFRAME_REGISTRY[df_name]['dataframe']
     max_row, max_col = df.shape
 
-    col_idx = col_to_colidx(df, start_col) if isinstance(start_col, str) else start_col
+    if start_col is None:
+        col_idx = 0
+    else:
+        col_idx = col_to_colidx(df, start_col) if isinstance(start_col, str) else start_col
     if not isinstance(col_idx, int) or col_idx < 0 or col_idx >= max_col:
         return f"Invalid start_col: '{start_col}' resolved to index {col_idx}, which is out of range."
     
@@ -195,6 +198,9 @@ def write_dataframe_tool(df_name: str,
                     c = col_idx + j * step
                 if r >= max_row or c >= max_col:
                     return f"Writing out of bounds: row {r} or column {c} exceeds DataFrame dimensions ({max_row}, {max_col})."
+                # 类型兼容处理，避免 FutureWarning
+                if df.dtypes.iloc[c] != 'object':
+                    df[df.columns[c]] = df[df.columns[c]].astype('object')
                 df.iat[r, c] = val
     except Exception as e:
         return f"Error writing to DataFrame '{df_name}': {str(e)}"
